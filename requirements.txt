@@ -1,4 +1,2 @@
 fastapi
-uvicorn
-websocket
-
+uvicorn[standard]
