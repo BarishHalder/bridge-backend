@@ -1,38 +1,20 @@
-# server.py
-
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from typing import Dict, List
+from fastapi import FastAPI, WebSocket
 from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
-# Dictionary to store room-wise connected clients
-rooms: Dict[str, List[WebSocket]] = {}
-
 @app.get("/")
-def root():
-    return JSONResponse({"message": "Bridge Chat Server is running!"})
+def ping():
+    return JSONResponse({"message": "Bridge backend is running. WebSocket server ready 🚀"})
 
-@app.websocket("/ws/{room_id}/{username}")
-async def websocket_endpoint(websocket: WebSocket, room_id: str, username: str):
+@app.websocket("/ws/{room}/{user}")
+async def websocket_endpoint(websocket: WebSocket, room: str, user: str):
     await websocket.accept()
-
-    # Add client to room
-    if room_id not in rooms:
-        rooms[room_id] = []
-    rooms[room_id].append(websocket)
-
+    await websocket.send_text(f"{user} joined room {room} ✅")
     try:
         while True:
-            # Receive message from client
             data = await websocket.receive_text()
-            msg = f"{username}: {data}"
+            await websocket.send_text(f"{user}: {data}")
+    except:
+        await websocket.close()
 
-            # Broadcast to other clients in the same room
-            for client in rooms[room_id]:
-                if client != websocket:
-                    await client.send_text(msg)
-
-    except WebSocketDisconnect:
-        print(f"❌ {username} disconnected from {room_id}")
-        rooms[room_id].remove(websocket)
